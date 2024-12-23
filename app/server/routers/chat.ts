@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { generateChatResponse } from "../services/chatService";
 import { publicProcedure, router } from "../trpc";
 
 // Define the Message schema
@@ -16,9 +17,10 @@ export const chatRouter = router({
       })
     )
     .mutation(async ({ input }) => {
-      console.log("Input received for chatCompletion: ", input);
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      return { response: "oh how clever" };
+      const response = await generateChatResponse(
+        input.message,
+        input.messageHistory
+      );
+      return { response };
     }),
 });
