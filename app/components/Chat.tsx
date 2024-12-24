@@ -32,7 +32,7 @@ export default function Chat() {
   };
 
   return (
-    <div className="flex flex-col h-full w-full max-w-md bg-gray-100 p-4 rounded-lg shadow-lg">
+    <div className="flex flex-col h-full max-w-6xl bg-gray-100 p-4 rounded-lg shadow-lg mx-auto">
       <div className="flex-1 overflow-y-auto mb-4">
         {messages.map((msg, index) => (
           <div
@@ -42,7 +42,7 @@ export default function Chat() {
             } mb-2`}
           >
             <div
-              className={`max-w-xs p-2 rounded-lg ${
+              className={`max-w-xl p-2 rounded-lg ${
                 msg.sender === "user"
                   ? "bg-blue-500 text-white"
                   : "bg-gray-300 text-gray-900"
@@ -60,19 +60,27 @@ export default function Chat() {
           </div>
         )}
       </div>
-      <div className="flex">
-        <input
-          type="text"
-          className="flex-1 p-2 border rounded-l-lg focus:outline-none"
+      <div className="flex flex-row justify-between items-start gap-2">
+        <textarea
+          className="flex-1 p-2 border rounded-lg focus:outline-none resize-none overflow-hidden min-h-[40px] max-h-[200px]"
           value={input}
-          onChange={(e) => setInput(e.target.value)}
+          onChange={(e) => {
+            setInput(e.target.value);
+            // Auto-adjust height
+            e.target.style.height = "auto";
+            e.target.style.height = `${e.target.scrollHeight}px`;
+          }}
           onKeyDown={(e) => {
-            if (e.key === "Enter") sendMessage();
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              sendMessage();
+            }
           }}
           placeholder="Type your message..."
+          rows={1}
         />
         <button
-          className="p-2 bg-blue-500 text-white rounded-r-lg"
+          className="h-10 px-4 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors self-end"
           onClick={sendMessage}
         >
           Send
