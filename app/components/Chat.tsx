@@ -4,16 +4,64 @@ import { trpc } from "@/app/utils/trpc";
 import { useState } from "react";
 
 // Define a Message type to enforce sender values
-type Message = { sender: "user" | "app"; text: string };
+type Message = {
+  sender: "user" | "app";
+  text: string;
+};
+
+type ConversationStyle = "default" | "analytical" | "practical";
+
+const formatMessageText = (text: string) => {
+  // Split text into lines
+  const lines = text.split(/\n+/);
+
+  return lines.map((line, i) => {
+    // Check for numbered lists (e.g., "1.", "2.", etc.)
+    const numberedMatch = line.match(/^\s*(\d+)\.\s+(.+)/);
+    if (numberedMatch) {
+      return (
+        <div key={i} className="flex gap-2 mb-1">
+          <span className="min-w-[20px]">{numberedMatch[1]}.</span>
+          <span>{numberedMatch[2]}</span>
+        </div>
+      );
+    }
+
+    // Check for bullet points
+    const bulletMatch = line.match(/^\s*[-•]\s+(.+)/);
+    if (bulletMatch) {
+      return (
+        <div key={i} className="flex gap-2 mb-1">
+          <span className="min-w-[20px]">•</span>
+          <span>{bulletMatch[1]}</span>
+        </div>
+      );
+    }
+
+    // Regular text
+    return (
+      <div key={i} className="mb-1">
+        {line}
+      </div>
+    );
+  });
+};
 
 export default function Chat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [style, setStyle] = useState<ConversationStyle>("default");
 
   const chatCompletion = trpc.chat.chatCompletion.useMutation({
     onSuccess: (data) => {
-      setMessages((prev) => [...prev, { sender: "app", text: data.response }]);
+      setMessages((prev) => [
+        ...prev,
+        {
+          sender: "app",
+          text: data.answer,
+        },
+      ]);
       setLoading(false);
     },
   });
@@ -28,27 +76,46 @@ export default function Chat() {
     chatCompletion.mutate({
       message: input,
       messageHistory: updatedMessages,
+      style,
     });
   };
 
   return (
     <div className="flex flex-col h-full max-w-6xl bg-gray-100 p-4 rounded-lg shadow-lg mx-auto">
+      <div className="mb-4">
+        <select
+          value={style}
+          onChange={(e) => setStyle(e.target.value as ConversationStyle)}
+          className="p-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="default">Default</option>
+          <option value="analytical">Analytical</option>
+          <option value="practical">Practical</option>
+        </select>
+      </div>
       <div className="flex-1 overflow-y-auto mb-4">
         {messages.map((msg, index) => (
-          <div
-            key={index}
-            className={`flex ${
-              msg.sender === "user" ? "justify-end" : "justify-start"
-            } mb-2`}
-          >
+          <div key={index} className="mb-4">
             <div
-              className={`max-w-xl p-2 rounded-lg ${
-                msg.sender === "user"
-                  ? "bg-blue-500 text-white"
-                  : "bg-gray-300 text-gray-900"
-              }`}
+              className={`flex ${
+                msg.sender === "user" ? "justify-end" : "justify-start"
+              } mb-2`}
             >
-              {msg.text}
+              <div
+                className={`max-w-xl p-2 rounded-lg ${
+                  msg.sender === "user"
+                    ? "bg-blue-500 text-white"
+                    : "bg-gray-300 text-gray-900"
+                }`}
+              >
+                {msg.sender === "user" ? (
+                  msg.text
+                ) : (
+                  <div className="whitespace-pre-wrap">
+                    {formatMessageText(msg.text)}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         ))}

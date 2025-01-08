@@ -14,13 +14,17 @@ export const chatRouter = router({
       z.object({
         message: z.string(),
         messageHistory: z.array(MessageSchema),
+        style: z
+          .enum(["default", "analytical", "practical"] as const)
+          .default("default"),
       })
     )
     .mutation(async ({ input }) => {
       const response = await generateChatResponse(
         input.message,
-        input.messageHistory
+        input.messageHistory,
+        input.style
       );
-      return { response };
+      return { answer: response };
     }),
 });
