@@ -58,7 +58,7 @@ export async function generateChatResponse(
   style: ConversationStyle = "default"
 ) {
   // Perform semantic search to get relevant context
-  const relevantContext = await searchKnowledgeBase(message);
+  const { results, combinedContent } = await searchKnowledgeBase(message);
 
   const formattedHistory = messageHistory.map((msg) =>
     msg.sender === "user" ? new HumanMessage(msg.text) : new AIMessage(msg.text)
@@ -68,7 +68,7 @@ export async function generateChatResponse(
   const systemPromptWithContext = [
     systemTemplates[style],
     "\nRelevant information from knowledge base:",
-    relevantContext,
+    combinedContent,
   ].join("\n\n");
 
   const stylePrompt = ChatPromptTemplate.fromMessages([
@@ -84,5 +84,8 @@ export async function generateChatResponse(
     input: message,
   });
 
-  return response.content as string;
+  return {
+    content: response.content as string,
+    searchResults: results,
+  };
 }

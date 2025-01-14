@@ -25,6 +25,9 @@ export const chatRouter = router({
         input.messageHistory,
         input.style
       );
-      return { answer: response };
+      return {
+        answer: response.content,
+        searchResults: response.searchResults,
+      };
     }),
 });

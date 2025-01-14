@@ -5,12 +5,19 @@ import { useState } from "react";
 
 type ConversationStyle = "default" | "analytical" | "practical";
 
+type SearchResult = {
+  content: string;
+  score: number;
+  source: string;
+};
+
 // Update Message type to include style information
 type Message = {
   sender: "user" | "app";
   text: string;
   style: ConversationStyle;
   timestamp: string;
+  searchResults?: SearchResult[];
 };
 
 const formatMessageText = (text: string) => {
@@ -65,6 +72,7 @@ export default function Chat() {
           text: data.answer,
           style,
           timestamp: new Date().toISOString(),
+          searchResults: data.searchResults,
         },
       ]);
       setLoading(false);
@@ -131,9 +139,25 @@ export default function Chat() {
                 </div>
               </div>
               {isDebugOpen && (
-                <div className="w-32 text-xs text-gray-500 pt-2">
+                <div className="w-64 text-xs text-gray-500 pt-2 bg-gray-100 p-2 rounded">
                   <div>Style: {msg.style}</div>
                   <div>{new Date(msg.timestamp).toLocaleTimeString()}</div>
+                  {msg.sender === "app" && msg.searchResults && (
+                    <div className="mt-2">
+                      <div className="font-semibold">
+                        RAG Results ({msg.searchResults.length}):
+                      </div>
+                      {msg.searchResults.map((result, idx) => (
+                        <div
+                          key={idx}
+                          className="mt-1 border-t border-gray-200 pt-1"
+                        >
+                          <div>Source: {result.source}</div>
+                          <div>Score: {(result.score * 100).toFixed(1)}%</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
