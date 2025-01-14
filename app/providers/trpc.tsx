@@ -17,7 +17,9 @@ export function TRPCReactProvider({
     trpc.createClient({
       links: [
         httpBatchLink({
-          url: "http://localhost:3000/api/trpc",
+          url: `${
+            typeof window !== "undefined" ? window.location.origin : ""
+          }/api/trpc`,
           headers() {
             const heads = new Map(Object.entries(headers));
             heads.set("x-trpc-source", "react");
