@@ -62,6 +62,9 @@ export default function Chat() {
   const [loading, setLoading] = useState(false);
   const [style, setStyle] = useState<ConversationStyle>("default");
   const [isDebugOpen, setIsDebugOpen] = useState(false);
+  const [expandedResults, setExpandedResults] = useState<Set<string>>(
+    new Set()
+  );
 
   const chatCompletion = trpc.chat.chatCompletion.useMutation({
     onSuccess: (data) => {
@@ -139,7 +142,7 @@ export default function Chat() {
                 </div>
               </div>
               {isDebugOpen && (
-                <div className="w-64 text-xs text-gray-500 pt-2 bg-gray-100 p-2 rounded">
+                <div className="w-96 text-xs text-gray-500 pt-2 bg-gray-100 p-2 rounded">
                   <div>Style: {msg.style}</div>
                   <div>{new Date(msg.timestamp).toLocaleTimeString()}</div>
                   {msg.sender === "app" && msg.searchResults && (
@@ -147,15 +150,58 @@ export default function Chat() {
                       <div className="font-semibold">
                         RAG Results ({msg.searchResults.length}):
                       </div>
-                      {msg.searchResults.map((result, idx) => (
-                        <div
-                          key={idx}
-                          className="mt-1 border-t border-gray-200 pt-1"
-                        >
-                          <div>Source: {result.source}</div>
-                          <div>Score: {(result.score * 100).toFixed(1)}%</div>
-                        </div>
-                      ))}
+                      {msg.searchResults.map((result, idx) => {
+                        const resultKey = `${msg.timestamp}-${idx}`;
+                        const isExpanded = expandedResults.has(resultKey);
+                        return (
+                          <div
+                            key={idx}
+                            className="mt-1 border-t border-gray-200 pt-1"
+                          >
+                            <div className="flex justify-between items-center">
+                              <div>
+                                <div>Source: {result.source}</div>
+                                <div>
+                                  Score: {(result.score * 100).toFixed(1)}%
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => {
+                                  const newExpanded = new Set(expandedResults);
+                                  if (isExpanded) {
+                                    newExpanded.delete(resultKey);
+                                  } else {
+                                    newExpanded.add(resultKey);
+                                  }
+                                  setExpandedResults(newExpanded);
+                                }}
+                                className="p-1 hover:bg-gray-200 rounded"
+                              >
+                                <svg
+                                  className={`w-4 h-4 transition-transform ${
+                                    isExpanded ? "rotate-180" : ""
+                                  }`}
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M19 9l-7 7-7-7"
+                                  />
+                                </svg>
+                              </button>
+                            </div>
+                            {isExpanded && (
+                              <div className="mt-1 p-2 bg-white rounded text-gray-700 whitespace-pre-wrap">
+                                {result.content}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
