@@ -55,7 +55,7 @@ const systemTemplates = Object.fromEntries(
   ])
 );
 
-export type ConversationStyle = keyof typeof systemTemplates;
+export type ConversationStyle = keyof typeof styleSpecificPrompts;
 
 export async function generateChatResponse(
   message: string,
