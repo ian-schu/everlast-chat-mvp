@@ -11,13 +11,19 @@ type SearchResult = {
   source: string;
 };
 
-// Update Message type to include style information
+// Update Message type to include style detection info
 type Message = {
   sender: "user" | "app";
   text: string;
   style: ConversationStyle;
   timestamp: string;
   searchResults?: SearchResult[];
+  styleDetection?: {
+    requestingStyle: boolean;
+    confidence: number;
+    suggestedStyle?: ConversationStyle;
+    explanation: string;
+  };
 };
 
 const formatMessageText = (text: string) => {
@@ -68,14 +74,20 @@ export default function Chat() {
 
   const chatCompletion = trpc.chat.chatCompletion.useMutation({
     onSuccess: (data) => {
+      // Update the style if a change was detected
+      if (data.newStyle) {
+        setStyle(data.newStyle);
+      }
+
       setMessages((prev) => [
         ...prev,
         {
           sender: "app",
           text: data.answer,
-          style,
+          style: data.newStyle || style,
           timestamp: new Date().toISOString(),
           searchResults: data.searchResults,
+          styleDetection: data.styleDetection,
         },
       ]);
       setLoading(false);
@@ -145,6 +157,27 @@ export default function Chat() {
                 <div className="w-96 text-xs text-gray-500 pt-2 bg-gray-100 p-2 rounded">
                   <div>Style: {msg.style}</div>
                   <div>{new Date(msg.timestamp).toLocaleTimeString()}</div>
+                  {msg.styleDetection && (
+                    <div className="mt-1 border-t border-gray-200 pt-1">
+                      <div className="font-semibold">Style Detection:</div>
+                      <div>
+                        Requesting Change:{" "}
+                        {msg.styleDetection.requestingStyle ? "Yes" : "No"}
+                      </div>
+                      <div>
+                        Confidence:{" "}
+                        {(msg.styleDetection.confidence * 100).toFixed(1)}%
+                      </div>
+                      {msg.styleDetection.suggestedStyle && (
+                        <div>
+                          Suggested Style: {msg.styleDetection.suggestedStyle}
+                        </div>
+                      )}
+                      <div className="text-gray-600 italic">
+                        {msg.styleDetection.explanation}
+                      </div>
+                    </div>
+                  )}
                   {msg.sender === "app" && msg.searchResults && (
                     <div className="mt-2">
                       <div className="font-semibold">

@@ -28,6 +28,8 @@ export const chatRouter = router({
       return {
         answer: response.content,
         searchResults: response.searchResults,
+        styleDetection: response.styleDetection,
+        newStyle: response.newStyle,
       };
     }),
 });

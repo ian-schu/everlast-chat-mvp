@@ -4,10 +4,11 @@ import {
   ChatPromptTemplate,
   MessagesPlaceholder,
 } from "@langchain/core/prompts";
+import { detectStyleRequest } from "./chatStyleDetectionService";
 import { searchKnowledgeBase } from "./vectorStoreService";
 
 const model = new ChatAnthropic({
-  modelName: "claude-3-sonnet-20240229",
+  modelName: "claude-3-5-sonnet-latest",
   temperature: 0.5,
   anthropicApiKey: process.env.ANTHROPIC_API_KEY,
 });
@@ -61,6 +62,16 @@ export async function generateChatResponse(
   messageHistory: Array<{ sender: string; text: string }>,
   style: ConversationStyle = "default"
 ) {
+  // First, check if the user is requesting a style change
+  const styleDetection = await detectStyleRequest(message);
+
+  // Apply new style if user is requesting a change and confidence is high
+  // Otherwise keep the current conversation style
+  const newStyle =
+    styleDetection.requestingStyle && styleDetection.confidence > 0.7
+      ? (styleDetection.suggestedStyle as ConversationStyle)
+      : style;
+
   // Perform semantic search to get relevant context
   const { results, combinedContent } = await searchKnowledgeBase(message);
 
@@ -70,7 +81,7 @@ export async function generateChatResponse(
 
   // Combine system prompt with retrieved context
   const systemPromptWithContext = [
-    systemTemplates[style],
+    systemTemplates[newStyle],
     "\nRelevant information from knowledge base:",
     combinedContent,
   ].join("\n\n");
@@ -91,5 +102,7 @@ export async function generateChatResponse(
   return {
     content: response.content as string,
     searchResults: results,
+    styleDetection,
+    newStyle: newStyle !== style ? newStyle : undefined,
   };
 }
