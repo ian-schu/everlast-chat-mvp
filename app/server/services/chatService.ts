@@ -4,6 +4,7 @@ import {
   ChatPromptTemplate,
   MessagesPlaceholder,
 } from "@langchain/core/prompts";
+import { searchKnowledgeBase } from "./vectorStoreService";
 
 const model = new ChatAnthropic({
   modelName: "claude-3-sonnet-20240229",
@@ -18,6 +19,7 @@ const topLevelSystemPrompt = [
   `Your role is to provide helpful guidance while building a rapport with the user through thoughtful dialogue.`,
   `If a user's response is too broad or open-ended, don't try to answer it – instead ask clarifying questions to try to home in on exactly what they need.`,
   `Your style overall should be confident but friendly, conversational, and informal. If the user expresses frustration or distress, you should be warm and supportive.`,
+  `When providing information, reference and incorporate the context provided from the knowledge base, but maintain a natural conversational tone.`,
 ].join("\n");
 
 // Style-specific prompts
@@ -55,12 +57,22 @@ export async function generateChatResponse(
   messageHistory: Array<{ sender: string; text: string }>,
   style: ConversationStyle = "default"
 ) {
+  // Perform semantic search to get relevant context
+  const relevantContext = await searchKnowledgeBase(message);
+
   const formattedHistory = messageHistory.map((msg) =>
     msg.sender === "user" ? new HumanMessage(msg.text) : new AIMessage(msg.text)
   );
 
+  // Combine system prompt with retrieved context
+  const systemPromptWithContext = [
+    systemTemplates[style],
+    "\nRelevant information from knowledge base:",
+    relevantContext,
+  ].join("\n\n");
+
   const stylePrompt = ChatPromptTemplate.fromMessages([
-    ["system", systemTemplates[style]],
+    ["system", systemPromptWithContext],
     new MessagesPlaceholder("history"),
     ["human", "{input}"],
   ]);
